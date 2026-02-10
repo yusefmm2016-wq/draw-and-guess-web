@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" style="
+    --tg-theme-accent-text-color: #168acd;
+    --tg-color-scheme: light;
+    --tg-theme-bg-color: #ffffff;
+    --tg-theme-bottom-bar-bg-color: #ffffff;
+    --tg-theme-button-color: #40a7e3;
+    --tg-theme-button-text-color: #ffffff;
+    --tg-theme-destructive-text-color: #d14e4e;
+    --tg-theme-header-bg-color: #ffffff;
+    --tg-theme-hint-color: #999999;
+    --tg-theme-link-color: #168acd;
+    --tg-theme-secondary-bg-color: #f1f1f1;
+    --tg-theme-section-bg-color: #ffffff;
+    --tg-theme-section-header-text-color: #168acd;
+    --tg-theme-section-separator-color: #e7e7e7;
+    --tg-theme-subtitle-text-color: #999999;
+    --tg-theme-text-color: #000000;
+    --tg-viewport-height: 100vh;
+    --tg-viewport-stable-height: 100vh;
+    --tg-theme-bg-color-transparent: rgba(255, 255, 255, 0.1);
+    --tg-theme-secondary-bg-color-reddish: rgb(255, 241, 241);
+    --tg-theme-secondary-bg-color-bluish: rgb(241, 241, 255);
+    --tg-theme-secondary-bg-color-greenish: rgb(241, 255, 241);
+    --tg-theme-button-color-reddish: rgb(94, 167, 227);
+    --tg-theme-button-color-bluish: rgb(64, 167, 255);
+    --tg-theme-button-color-greenish: rgb(64, 197, 227);
+    --brush-color: #ffffff;
+    --brush-solid-color: #ffffffff;
+  ">
+
+<head>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <link rel="icon" href="images.jfif" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="Draw & Guess" content="You draw, and your friends try to guess!" />
+  <link rel="apple-touch-icon" href="images.jfif" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Draw & Guess</title>
+  <link href="/draw/style.css" rel="stylesheet" />
+</head>
+
+<body style="background-color: rgb(255, 255, 255)">
+  <div id="root">
+    <div>
+      <div style="z-index: 1000; transition: opacity 0.2s"></div>
+      <div style="
+            opacity: 1;
+            transition: opacity 0.3s;
+            position: fixed;
+            inset: 0px;
+            z-index: 10;
+            pointer-events: none;
+          ">
+        <div class="board-container" style="height: 100%; margin-top: 0px; pointer-events: auto;">
+          <div class="word" id="wordDisplay" style="cursor: default; font-size: 18px; display: none;">
+            <span id="targetWordDisplay">الكلمة غير محددة</span>
+            <span style="font-size: 0.8em; opacity: 0.7;"> ✍️</span>
+        </div>
+          <div></div>
+          <div class="backing-canvas" style="width: 1536px; height: 620px">
+          </div>
+          <div class="canvas-container" id="canvasContainer" style="
+                left: 50%;
+                transform: translateX(-50%) translate(0px, 250.39px) scale(1)
+                  rotate(0deg);
+                transition: transform 0.2s ease;
+              ">
+            <canvas width="800" height="800" id="mainCanvas" class="main-canvas" style="
+                  width: 500.78px;
+                  height: 500.78px;
+                  box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 10px;
+                ">
+            </canvas>
+            <canvas width="800" height="800" class="grid-canvas"
+              style="width: 500.78px; height: 500.78px; pointer-events: none">
+            </canvas>
+            <canvas width="800" height="800" id="tempCanvas" class="temp-canvas"
+              style="width: 500.78px; height: 500.78px; cursor: crosshair">
+            </canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- أيقونة عائمة للتحكم في الحجم -->
+      <div id="thicknessToggleBtn" style="position: fixed; right: 15px; top: 50%; transform: translateY(-50%); z-index: 10002; background: var(--tg-theme-button-color, #40a7e3); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; opacity: 0.6; transition: opacity 0.3s, transform 0.2s; pointer-events: auto;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+          <circle cx="12" cy="12" r="3"></circle>
+          <circle cx="12" cy="12" r="8"></circle>
+        </svg>
+      </div>
+
+      <div id="thicknessSliderContainer" style="position: fixed; right: 70px; top: 50%; transform: translateY(-50%); z-index: 10001; background: var(--tg-theme-bg-color, #ffffff); padding: 15px 10px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); display: none; flex-direction: column; align-items: center; gap: 10px; pointer-events: auto; transition: opacity 0.3s;">
+        <span style="font-size: 12px; font-weight: bold; color: var(--tg-theme-text-color, #000);">حجم الخط</span>
+        <div style="height: 150px; display: flex; align-items: center;">
+          <input type="range" id="thicknessSlider" min="1" max="50" value="10" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 8px; height: 150px; cursor: pointer;">
+        </div>
+        <span id="thicknessValueDisplay" style="font-size: 12px; font-weight: bold; color: var(--tg-theme-button-color, #40a7e3);">10px</span>
+      </div>
+      
+      <div class="controls" style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 10000; background: var(--tg-theme-bg-color, #ffffff); padding: 6px 10px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); max-width: 98%; pointer-events: auto;">
+            <div class="controls-frame" style="gap: 8px; padding: 8px;">
+              <div class="controls-row" style="gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <style>
+                  .controls-row::-webkit-scrollbar { display: none; }
+                </style>
+                <div id="toolPencil">
+                  <div style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
+                    <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;">
+                      <div class="circle-switch-menu-indicator"></div>
+                      <span class="svg" style="height: 20px; width: 20px">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                          <path d="M481 31C445.1-4.8 386.9-4.8 351 31l-15 15L322.9 33C294.8 4.9 249.2 4.9 221.1 33L135 119c-9.4 9.4-9.4 24.6 0 33.9s24.6 9.4 33.9 0L255 66.9c9.4-9.4 24.6-9.4 33.9 0L302.1 80 186.3 195.7 316.3 325.7 481 161c35.9-35.9 35.9-94.1 0-129.9zM293.7 348.3L163.7 218.3 99.5 282.5c-48 48-80.8 109.2-94.1 175.8l-5 25c-1.6 7.9 .9 16 6.6 21.7s13.8 8.1 21.7 6.6l25-5c66.6-13.3 127.8-46.1 175.8-94.1l64.2-64.2z"></path>
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="toolEraser">
+                  <div class="circle-switch-menu-indicator"></div>
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M497.941 273.941c18.745-18.745 18.745-49.137 0-67.882l-160-160c-18.745-18.745-49.136-18.746-67.883 0l-256 256c-18.745 18.745-18.745 49.137 0 67.882l96 96A48.004 48.004 0 0 0 144 480h356c6.627 0 12-5.373 12-12v-40c0-6.627-5.373-12-12-12H355.883l142.058-142.059zm-302.627-62.627l137.373 137.373L265.373 416H150.628l-80-80 124.686-124.686z"></path>
+                    </svg>
+                  </span>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="toolFill">
+                  <div class="circle-switch-menu-indicator"></div>
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M512 320s-64 92.65-64 128c0 35.35 28.66 64 64 64s64-28.65 64-64-64-128-64-128zm-9.37-102.94L294.94 9.37C288.69 3.12 280.5 0 272.31 0s-16.38 3.12-22.62 9.37l-81.58 81.58L81.93 4.76c-6.25-6.25-16.38-6.25-22.62 0L36.69 27.38c-6.24 6.25-6.24 16.38 0 22.62l86.19 86.18-94.76 94.76c-37.49 37.48-37.49 98.26 0 135.75l117.19 117.19c18.74 18.74 43.31 28.12 67.87 28.12 24.57 0 49.13-9.37 67.87-28.12l221.57-221.57c12.5-12.5 12.5-32.75.01-45.25zm-116.22 70.97H65.93c1.36-3.84 3.57-7.98 7.43-11.83l13.15-13.15 81.61-81.61 58.6 58.6c12.49 12.49 32.75 12.49 45.24 0s12.49-32.75 0-45.24l-58.6-58.6 58.95-58.95 162.44 162.44-48.34 48.34z"></path>
+                    </svg>
+                  </span>
+                </div>
+                <div class="allow-context-menu">
+                  <div id="paletteToggleButton" class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;">
+                    <input type="color" id="colorInput" value="#000000" style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;" />
+                    <span class="svg" style="height: 20px; width: 20px;">
+                      <svg id="colorIconSpan" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="color: rgb(0, 0, 0); height: 24px; width: 24px">
+                        <path d="M204.3 5C104.9 24.4 24.8 104.3 5.2 203.4c-37 187 131.7 326.4 258.8 306.7 41.2-6.4 61.4-54.6 42.5-91.7-23.1-45.4 9.9-98.4 60.9-98.4h79.7c35.8 0 64.8-29.6 64.9-65.3C511.5 97.1 368.1-26.9 204.3 5zM96 320c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128 64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"></path>
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="allow-context-menu" id="brushSizeControl" style="width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: ns-resize; user-select: none; position: relative; z-index: 200;">
+                  <div style="width: 100%; height: 100%; position: absolute; z-index: 201; opacity: 0; top: 0px; left: 0px;"></div>
+                  <div style="width: 15.3773px; height: 15.3773px; border-radius: 50%; background: rgb(0, 0, 0); display: flex; justify-content: center; align-items: center; position: absolute; z-index: 99; box-shadow: grey 0px 0px 0px 0.3px, black 0px 0px 0px 0.3px; filter: blur(0px);">
+                    <span style="color: rgb(238, 238, 238); font-size: 13px; position: absolute; left: 51%; top: 47%; transform: translate(-50%, -50%); opacity: 0;">x0.31</span>
+                  </div>
+                  <div style="opacity: 1; transition: opacity 200ms">
+                    <div class="circle-switch" style="cursor: ns-resize; min-width: 40px; min-height: 40px; width: 40px; height: 40px;">
+                      <div class="svg empty-circle" style="height: 20px; width: 20px; border-radius: 50%"></div>
+                    </div>
+                  </div>
+                  <div class="brush-info" style="font-size: 10px;">25px<br />100%</div>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" id="btnUndo" title="رجوع للخلف">
+                  <span class="svg" style="height: 20px; width: 20px">
+                      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                        <path d="M255.545 8c-66.269.119-126.438 26.233-170.86 68.685L48.971 40.971C33.851 25.851 8 36.559 8 57.941V192c0 13.255 10.745 24 24 24h134.059c21.382 0 32.09-25.851 16.971-40.971l-41.75-41.75c30.864-28.899 70.801-44.907 113.23-45.273 92.398-.798 170.283 73.977 169.484 169.442C423.236 348.009 349.816 424 256 424c-41.127 0-79.997-14.678-110.63-41.556-4.743-4.161-11.906-3.908-16.368.553L89.34 422.659c-4.872 4.872-4.631 12.815.482 17.433C133.798 479.813 192.074 504 256 504c136.966 0 247.999-111.033 248-247.998C504.001 119.193 392.354 7.755 255.545 8z"></path>
+                      </svg>
+                  </span>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" id="btnRedo" title="تقدم للأمام">
+                  <span class="svg" style="height: 20px; width: 20px">
+                      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                        <path d="M256.455 8c66.269.119 126.437 26.233 170.859 68.685l35.715-35.715C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.75c-30.864-28.899-70.801-44.907-113.23-45.273-92.398-.798-170.283 73.977-169.484 169.442C88.764 348.009 162.184 424 256 424c41.127 0 79.997-14.678 110.629-41.556 4.743-4.161 11.906-3.908 16.368.553l39.662 39.662c4.872 4.872 4.631 12.815-.482 17.433C378.202 479.813 319.926 504 256 504 119.034 504 8.001 392.967 8 256.002 7.999 119.193 119.646 7.755 256.455 8z"></path>
+                      </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="controls-row" style="gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="btnClear">
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 352 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
+                    </svg>
+                  </span>
+                </div>
+                <div id="toolShapes" class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;">
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg fill="currentColor" version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" xml:space="preserve">
+                      <g><path d="M22,29c-4.4,0-8-3.6-8-8s3.6-8,8-8s8,3.6,8,8S26.4,29,22,29z" /></g>
+                      <path d="M12,21c0-3.5,1.8-6.5,4.4-8.3l-3-4.4C12.9,7.5,12,7,11,7S9.1,7.5,8.6,8.3l-6,8.9c-0.7,1-0.7,2.2-0.2,3.2 C2.9,21.4,3.9,22,5,22h7.1C12,21.7,12,21.3,12,21z" />
+                      <path d="M25,4h-8c-1.4,0-2.5,0.9-2.9,2.1c0.4,0.3,0.7,0.6,0.9,1l3.1,4.6c1.2-0.5,2.5-0.8,3.8-0.8c2.3,0,4.3,0.8,6,2V7 C28,5.3,26.7,4,25,4z" />
+                    </svg>
+                  </span>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="btnZoomIn" title="تكبير">
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288zM224 144c0-8.8-7.2-16-16-16s-16 7.2-16 16v32H160c-8.8 0-16 7.2-16 16s7.2 16 16 16h32v32c0 8.8 7.2 16 16 16s16-7.2 16-16V208h32c8.8 0 16-7.2 16-16s-7.2-16-16-16H224V144z"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="btnZoomOut" title="تصغير">
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM160 176c0-8.8 7.2-16 16-16H240c8.8 0 16 7.2 16 16s-7.2 16-16 16H176c-8.8 0-16-7.2-16-16z"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="circle-switch" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px;" id="btnZoomReset" title="إعادة تعيين">
+                  <span class="svg" style="height: 20px; width: 20px">
+                    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="height: 24px; width: 24px">
+                      <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM184 176c0-13.3 10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24s-24-10.7-24-24z"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="circle-switch active" style="cursor: pointer; min-width: 40px; min-height: 40px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;" id="btnSend">
+                  <span class="svg" style="height: 20px; width: 20px">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" height="1em" width="1em" style="height: 20px; width: 20px; fill: white;">
+                          <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V173.3c0-17-6.7-33.3-18.7-45.3L352 50.7C340 38.7 323.7 32 306.7 32H64zm0 96c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v64c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V128zM224 416a64 64 0 1 0 0-128 64 64 0 1 0 0 128z" />
+                        </svg>
+                      </span>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="shapeDialog" class="shape-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background-color: var(--tg-theme-secondary-bg-color, #f1f1f1); border-radius: 10px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); display: none; text-align: center; width: 85%; max-width: 320px; pointer-events: auto; touch-action: auto;">
+    <h3 style="color: var(--tg-theme-text-color, #000); margin-top: 0; margin-bottom: 20px;">اختر الشكل</h3>
+    <div id="shapeOptions" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; justify-items: center; max-height: 280px; overflow-y: scroll; padding: 10px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; background: rgba(0,0,0,0.02); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;">
+      <div class="shape-button" data-shape="square" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1H14V14H1V1Z" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2" fill="none" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="circle" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="20" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="4" fill="none" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="triangle" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="12 3 2 21 22 21" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="line" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><line x1="4" y1="4" x2="20" y2="20" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="ellipse" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="5" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="pentagon" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="12 2 22 9 18 21 6 21 2 9" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="hexagon" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="12 2 21 7 21 17 12 22 3 17 3 7" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="star" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="12 2 15 9 23 9 17 14 19 22 12 17 5 22 7 14 1 9 9 9" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="arrow" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="diamond" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="12 2 22 12 12 22 2 12" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="cloud" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2-1.3-3.7-3.2-4.2C18.4 6.3 15.1 3 11 3 7.8 3 5.1 4.9 4 7.8 2.3 8.3 1 9.8 1 11.5c0 2 1.6 3.5 3.5 3.5H5v4h12.5z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="heart" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M20.8 4.6c-2.3-2.3-6.1-2.3-8.4 0L12 5l-.4-.4c-2.3-2.3-6.1-2.3-8.4 0-2.3 2.3-2.3 6.1 0 8.4l8.8 8.8 8.8-8.8c2.3-2.3 2.3-6.1 0-8.4z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="moon" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="bolt" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="cross" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+        </div>
+      </div>
+      <!-- 10 أشكال جديدة -->
+      <div class="shape-button" data-shape="rhombus" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 2l9 10-9 10-9-10 9-10z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="parallelogram" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M7 5l14 0-7 14-14 0 7-14z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="trapezoid" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M6 5l12 0 4 14-20 0 4-14z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="plus" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 2l0 20M2 12l20 0" stroke-width="4" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="X" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M4 4l16 16M20 4l-16 16" stroke-width="4" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="ring" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-width="2" /><circle cx="12" cy="12" r="5" stroke-width="2" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="leaf" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M2 22C2 22 10 22 16 16C22 10 22 2 22 2C22 2 14 2 8 8C2 14 2 22 2 22zM2 22L12 12" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="drop" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="pacman" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 12L19.07 19.07A10 10 0 1 1 19.07 4.93L12 12Z" /></svg>
+          </span>
+        </div>
+      </div>
+      <div class="shape-button" data-shape="shield" style="cursor: pointer;">
+        <div class="circle-switch" style="width: 50px; height: 50px;">
+          <span class="svg" style="height: 30px; width: 30px; display: inline-block;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--tg-theme-button-color, #40a7e3)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 20px;">
+      <button id="closeShapeDialog" style="background-color: var(--tg-theme-button-color, #40a7e3); color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">إغلاق</button>
+    </div>
+  </div>
+
+  <div id="saveWordDialog" class="word-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001; background-color: var(--tg-theme-secondary-bg-color, #f1f1f1); border-radius: 10px; padding: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); display: none; text-align: center; width: 80%; max-width: 300px;">
+    <h3 style="color: var(--tg-theme-text-color, #000); margin-top: 0; margin-bottom: 15px;">ماذا رسمت؟</h3>
+    <input type="text" id="customWordInput" placeholder="اكتب الكلمة هنا..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--tg-theme-hint-color, #999); margin-bottom: 15px; box-sizing: border-box; text-align: center; font-size: 16px;">
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button id="confirmSaveBtn" style="background-color: var(--tg-theme-button-color, #40a7e3); color: var(--tg-theme-button-text-color, #ffffff); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">إرسال ✅</button>
+      <button id="cancelSaveBtn" style="background-color: var(--tg-theme-destructive-text-color, #d14e4e); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">إلغاء ❌</button>
+    </div>
+  </div>
+
+  <script src="/draw/app.js"></script>
+</body>
+
+</html>

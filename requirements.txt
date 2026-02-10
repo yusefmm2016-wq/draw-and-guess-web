@@ -1,0 +1,6 @@
+python-telegram-bot[webhooks]
+python-telegram-bot[job-queue]
+Unidecode
+python-dotenv
+flask
+requests

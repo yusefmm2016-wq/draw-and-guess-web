@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حزر الورقة - لعبة البطاقات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            min-height: 100vh;
+            perspective: 1000px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(100, 200, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* طاولة اللعب */
+        .game-table {
+            width: 100%;
+            max-width: 100vw;
+            margin: 0;
+            background: rgba(15, 32, 39, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 5px;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
+        }
+
+        .game-table::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 15px;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(100, 200, 255, 0.2);
+        }
+
+        /* رأس اللعبة */
+        .game-header {
+            text-align: center;
+            color: #ffd700;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(100, 200, 255, 0.5);
+            position: relative;
+            padding: 5px 8px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(100, 200, 255, 0.1) 100%);
+            border-radius: 8px;
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+
+        .game-header h1 {
+            font-size: 16px;
+            margin: 0 0 3px 0;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .instructions-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instructions-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .instructions-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .instructions-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .controls-divider {
+            width: 2px;
+            height: 24px;
+            background: rgba(255,215,0,0.5);
+            margin: 0 4px;
+        }
+
+        .music-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .music-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+            color: #1a472a;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(212,175,55,0.5);
+            transition: all 0.3s;
+        }
+
+        .music-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(212,175,55,0.8);
+        }
+
+        .song-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.4);
+            transition: all 0.3s;
+        }
+
+        .song-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.6);
+        }
+
+        .song-btn.active {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: #fff;
+            box-shadow: 0 4px 15px rgba(245,87,108,0.8);
+        }
+
+        .volume-slider {
+            width: 60px;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #d4af37;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: #d4af37;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .instructions-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .instructions-overlay.show {
+            display: flex;
+        }
+
+        .instructions-card {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 3px solid #d4af37;
+            box-shadow: 0 10px 40px rgba(212,175,55,0.5);
+        }
+
+        .instructions-card h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .instructions-card h3 {
+            color: #f4d03f;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .instructions-card p,
+        .instructions-card ul {
+            color: #ffffff;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .instructions-card ul {
+            padding-right: 20px;
+        }
+
+        .instructions-card li {
+            margin-bottom: 8px;
+        }
+
+        .close-instructions-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 10px 30px;
+            background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%);
+            color: #1a472a;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-instructions-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .status-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .attempts-bar {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 6px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 3px 12px rgba(240, 147, 251, 0.4);
+        }
+
+        /*بطاقات */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            height: 110px;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                height: 90px;
+            }
+            
+            .cards-container {
+                gap: 4px;
+                padding: 4px;
+            }
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 3px solid #d4af37;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #8b0000 0%, #dc143c 100%);
+            transform: rotateY(180deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+        }
+
+        .card-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 8px;
+        }
+
+        .card-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 8px;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 3px solid #667eea;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px 5px 8px 5px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+
+        .card-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a472a;
+            margin: 0;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .card-details {
+            font-size: 8px;
+            color: #666;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .card-badge {
+            display: inline-block;
+            margin: 1px;
+            font-size: 9px;
+        }
+
+        /* لوحة التحكم */
+        .control-panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 4px;
+            border-radius: 8px;
+            margin: 3px 0;
+            border: 2px solid rgba(255,215,0,0.3);
+        }
+
+        .chat-container {
+            background: rgba(15, 32, 39, 0.7);
+            backdrop-filter: blur(15px);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 6px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-messages {
+            max-height: 140px;
+            min-height: 100px;
+            overflow-y: auto;
+            margin-bottom: 4px;
+            padding: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+
+        .chat-message {
+            margin: 6px 0;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            position: relative;
+            max-width: 75%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.my-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: right;
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-right-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-message.their-message {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            text-align: left;
+            margin-right: auto;
+            margin-left: 0;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-message.answer-message {
+            background: linear-gradient(135deg, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.4) 100%);
+            color: white;
+            text-align: center;
+            margin: 8px auto;
+            max-width: 90%;
+            font-style: italic;
+            border: 2px solid rgba(255,215,0,0.8);
+            font-weight: bold;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            font-size: 9px;
+            margin-bottom: 2px;
+            opacity: 0.95;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .message-content {
+            line-height: 1.4;
+            font-size: 11px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 5px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .chat-send-btn {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .chat-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.6);
+        }
+
+        .guess-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .guess-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.6);
+        }
+
+        .guess-btn:active {
+            transform: translateY(0);
+        }
+
+        /* نافذة الفائز */
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .winner-overlay.show {
+            display: flex;
+        }
+
+        .winner-card {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            animation: bounceIn 0.8s;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .winner-emoji {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .winner-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a472a;
+        }
+
+        /* اختيار الشخصية السرية */
+        .secret-selection {
+            background: rgba(255,215,0,0.2);
+            padding: 10px;
+            border-radius: 15px;
+            border: 2px dashed #ffd700;
+        }
+
+        .secret-selection h2 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        /* نافذة إدخال الاسم */
+        .name-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .name-overlay.show {
+            display: flex;
+        }
+
+        .name-card {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            border: 3px solid rgba(100, 200, 255, 0.5);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(100, 200, 255, 0.3);
+            max-width: 450px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+
+        .name-card .game-title {
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #d4af37);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255,215,0,0.6);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .name-card h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .name-card p {
+            color: #ffffff;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .player-name-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(100, 200, 255, 0.5);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .player-name-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .player-name-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 25px rgba(102, 126, 234, 0.5);
+            transform: scale(1.02);
+        }
+
+        .confirm-name-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .confirm-name-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.7);
+        }
+
+        .confirm-name-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .avatar-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid rgba(100, 200, 255, 0.3);
+            transition: all 0.3s;
+            object-fit: cover;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+
+        .avatar-option:hover {
+            transform: scale(1.1);
+            border-color: rgba(102, 126, 234, 0.6);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .avatar-option.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 25px rgba(102, 126, 234, 0.8), 0 0 50px rgba(102, 126, 234, 0.4);
+            transform: scale(1.15);
+        }
+
+        .chat-message-with-avatar {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            margin: 8px 0;
+            width: 100%;
+            flex-direction: row-reverse; /* الصورة على اليمين */
+        }
+
+        .chat-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,215,0,0.4);
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .chat-message-content {
+            flex: 1;
+            min-width: 0;
+            max-width: calc(100% - 51px);
+            text-align: right; /* النص على اليمين */
+        }
+
+        /* نافذة عرض البطاقة المختارة */
+        .card-display-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+        }
+
+        .card-display-overlay.show {
+            display: flex;
+        }
+
+        .card-display-container {
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 3px solid #d4af37;
+            box-shadow: 0 10px 40px rgba(212,175,55,0.5);
+            max-width: 90%;
+            animation: bounceIn 0.6s;
+        }
+
+        .card-display-container h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .large-card-display {
+            width: 280px;
+            height: 350px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 4px solid #d4af37;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(212,175,55,0.6);
+        }
+
+        .large-card-display img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .close-card-display-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-card-display-btn:hover {
+            transform: scale(1.03);
+        }
+
+        /*بطاقة المختارة المصغرة */
+        .my-secret-card-container {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.2) 100%);
+            backdrop-filter: blur(10px);
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            border: 2px solid rgba(100, 200, 255, 0.5);
+            text-align: center;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+
+        .my-secret-label {
+            color: #64c8ff;
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 10px rgba(100, 200, 255, 0.8);
+        }
+
+        .my-secret-card {
+            width: 55px;
+            height: 70px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid #d4af37;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(212,175,55,0.5);
+        }
+
+        .my-secret-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-table">
+        <div class="game-header">
+            <h1 style="background: linear-gradient(135deg, #ffd700, #ffed4e, #d4af37); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(255,215,0,0.5);">✨ طويق ✨</h1>
+            <div class="header-controls">
+                <button class="instructions-btn" onclick="showInstructions()">📖 التعليمات</button>
+            </div>
+        </div>
+
+        <div class="status-bar" id="status">جاري التحميل...</div>
+        <div class="attempts-bar" id="attemptsBar" style="display: none;">
+            🎯 فرص التخمين المتبقية: <span id="attemptsCount">2</span>
+        </div>
+
+        <!-- اختيار الشخصية السرية -->
+        <div id="secret-selection" style="display: none;" class="secret-selection">
+            <h2>✨ اختر شخصيتك السرية ✨</h2>
+            <div class="cards-container" id="secret-cards"></div>
+        </div>
+
+        <!-- منطقة اللعب -->
+        <div id="game-area" style="display: none;">
+            <!-- عرض البطاقة المختارة -->
+            <div class="my-secret-card-container" id="mySecretCardContainer" style="display: none;">
+                <div class="my-secret-label">🎯 بطاقتك السرية:</div>
+                <div class="my-secret-card" id="mySecretCard"></div>
+            </div>
+
+            <div class="cards-container" id="cards-grid"></div>
+
+            <div class="control-panel">
+                <button class="guess-btn" onclick="enableGuessMode()" style="margin-bottom: 8px; padding: 8px; font-size: 14px;">
+                    🎯 خمّن الشخصية
+                </button>
+                
+                <div class="chat-container">
+                    <div class="chat-header">💬 صندوق الأسئلة والأجوبة</div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px; font-size: 12px;">
+                            📝 ابدأ بطرح أسئلتك هنا...
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="اكتب سؤالك هنا واضغط Enter..." />
+                        <button class="chat-send-btn" onclick="sendChatQuestion()">📤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="winner-overlay" id="winnerOverlay">
+        <div class="winner-card">
+            <div class="winner-emoji" id="winnerEmoji">🏆</div>
+            <div class="winner-text" id="winnerText"></div>
+        </div>
+    </div>
+
+    <!-- نافذة إدخال الاسم -->
+    <div class="name-overlay" id="nameOverlay">
+        <div class="name-card">
+            <div class="game-title">✨ طويق ✨</div>
+            <h2>👋 مرحباً بك أيها اللاعب!</h2>
+            <p>🎮 استعد لخوض تحدي مثير في لعبة طويق</p>
+
+            <!-- عرض صورة المستخدم -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div id="userPhotoContainer" style="width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; border: 4px solid rgba(100, 200, 255, 0.5); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);">
+                    <span style="font-size: 60px; color: white;">👤</span>
+                </div>
+            </div>
+
+            <input type="text" id="playerNameInput" class="player-name-input" placeholder="✍️ اكتب اسمك هنا..." maxlength="20">
+            <button class="confirm-name-btn" onclick="confirmPlayerName()">✅ ابدأ اللعبة</button>
+        </div>
+    </div>
+
+    <!-- نافذة عرض البطاقة المختارة -->
+    <div class="card-display-overlay" id="cardDisplayOverlay">
+        <div class="card-display-container">
+            <h2>✨ بطاقتك السرية ✨</h2>
+            <div class="large-card-display" id="largeCardDisplay"></div>
+            <button class="close-card-display-btn" onclick="closeCardDisplay()">✅ حفظ واستمرار</button>
+        </div>
+    </div>
+
+    <div class="instructions-overlay" id="instructionsOverlay">
+        <div class="instructions-card">
+            <h2>📖 تعليمات لعبة حزر الورقة</h2>
+
+            <h3>🎯 الهدف من اللعبة:</h3>
+            <p>حزر شخصية الخصم قبل أن يحزر شخصيتك!</p>
+
+            <h3>📝 كيفية اللعب:</h3>
+            <ul>
+                <li>🔹 في البداية، كل لاعب يختار شخصية سرية من البطاقات</li>
+                <li>🔹 بالتناوب، كل لاعب يطرح أسئلة على الخصم (مثل: هل الشخصية أنثى؟ هل ترتدي نظارة؟)</li>
+                <li>🔹 الخصم يجيب بـ "نعم" أو "لا" فقط</li>
+                <li>🔹 بناءً على الإجابة، يمكنك استبعاد البطاقات التي لا تتطابق (اضغط عليها لقلبها)</li>
+                <li>🔹 عندما تعرف الشخصية، اضغط على زر "خمّن الشخصية النهائية" واختر البطاقة الصحيحة</li>
+            </ul>
+
+            <h3>💡 نصائح:</h3>
+            <ul>
+                <li>⭐ اسأل أسئلة ذكية تساعدك على استبعاد أكبر عدد من البطاقات</li>
+                <li>⭐ راقب إجابات خصمك بعناية</li>
+                <li>⭐ لا تخمّن مبكراً، تأكد من معرفة الشخصية الصحيحة</li>
+            </ul>
+
+            <h3>🎮 التحكم:</h3>
+            <ul>
+                <li>💬 صندوق الدردشة: اكتب أسئلتك هنا (مثل: أنثى؟ نظارة؟ شعر أشقر؟)</li>
+                <li>🎴 البطاقات: اضغط عليها لاستبعادها وقلبها</li>
+                <li>🎯 زر التخمين: اضغط عليه عندما تكون جاهزاً للتخمين النهائي</li>
+            </ul>
+
+            <h3>🏆 الفوز:</h3>
+            <p>أول لاعب يخمن شخصية الخصم بشكل صحيح يفوز!</p>
+
+            <button class="close-instructions-btn" onclick="hideInstructions()">✅ فهمت، لنبدأ!</button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        const playerId = parseInt(urlParams.get('player'));
+        let gameState = null;
+        let guessMode = false;
+        let isSpectator = playerId === 0;
+
+        let messageCount = 0;
+        let playerName = null; // عدم حفظ الاسم - سيُطلب في كل مرة
+        let playerAvatar = null; // صورة اللاعب المختارة
+        let mySecretCardId = null;
+
+        // جلب صورة البروفايل من تيليجرام
+        let telegramUserPhoto = null;
+        let photoLoadPromise = null;
+        
+        async function loadUserPhoto() {
+            const photoContainer = document.getElementById('userPhotoContainer');
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const user = tg.initDataUnsafe.user;
+                    
+                    // استخدام اسم المستخدم من تيليجرام تلقائياً
+                    if (!playerName && user.first_name) {
+                        playerName = user.first_name;
+                        document.getElementById('playerNameInput').value = user.first_name;
+                    }
+                    
+                    // جلب الصورة من السيرفر
+                    if (user.id) {
+                        try {
+                            console.log('Fetching photo for user:', user.id);
+                            const response = await fetch(`/api/get_user_photo/${user.id}`);
+                            const data = await response.json();
+                            
+                            if (data.photo_url && data.photo_url !== null && data.photo_url.startsWith('data:image')) {
+                                telegramUserPhoto = data.photo_url;
+                                playerAvatar = data.photo_url;
+                                
+                                // عرض الصورة في نافذة الاسم
+                                if (photoContainer) {
+                                    photoContainer.innerHTML = `<img src="${data.photo_url}" alt="صورة المستخدم" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                                }
+                                
+                                console.log('Photo loaded successfully');
+                            } else {
+                                console.log('No photo available from Telegram');
+                            }
+                        } catch (err) {
+                            console.error('Error fetching photo:', err);
+                        }
+                    }
+                }
+            } else {
+                console.log('Telegram WebApp not available');
+            }
+        }
+        
+        // تحميل الصورة عند بدء الصفحة
+        photoLoadPromise = loadUserPhoto();
+        
+        
+
+        // نظام الأصوات
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            switch(type) {
+                case 'flip': // صوت قلب البطاقة
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+
+                case 'correct': // صوت الإجابة الصحيحة
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                    break;
+
+                case 'wrong': // صوت الإجابة الخاطئة
+                    oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+
+                case 'win': // صوت الفوز
+                    const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C-E-G-C
+                    frequencies.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.setValueAtTime(freq, audioContext.currentTime + i * 0.15);
+                        gain.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+                        osc.start(audioContext.currentTime + i * 0.15);
+                        osc.stop(audioContext.currentTime + i * 0.15 + 0.3);
+                    });
+                    return; // لا نحتاج للكود التالي
+
+                case 'lose': // صوت الخسارة
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.5);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                    break;
+
+                case 'message': // صوت وصول رسالة
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.05);
+                    break;
+            }
+        }
+
+        function addChatMessage(text, type, senderName = null, senderAvatar = null) {
+            const chatMessages = document.getElementById('chatMessages');
+
+            // إزالة رسالة "ابدأ بطرح أسئلتك" عند أول رسالة
+            if (messageCount === 0) {
+                chatMessages.innerHTML = '';
+            }
+            messageCount++;
+
+            if (type === 'answer-message') {
+                // رسالة الإجابة بدون صورة
+                const messageEl = document.createElement('div');
+                messageEl.className = `chat-message ${type}`;
+                const contentEl = document.createElement('div');
+                contentEl.className = 'message-content';
+                contentEl.textContent = text;
+                messageEl.appendChild(contentEl);
+                chatMessages.appendChild(messageEl);
+            } else {
+                // رسالة عادية مع صورة - الصورة دائماً على اليمين
+                const containerEl = document.createElement('div');
+                containerEl.className = 'chat-message-with-avatar';
+                containerEl.style.alignItems = 'flex-end';
+                containerEl.style.gap = '8px';
+                containerEl.style.marginBottom = '8px';
+
+                // إضافة صورة المرسل فقط إذا كانت موجودة
+                if (senderAvatar && senderAvatar.trim() !== '') {
+                    const avatarEl = document.createElement('img');
+                    avatarEl.src = senderAvatar;
+                    avatarEl.className = 'chat-avatar';
+                    avatarEl.alt = senderName || 'Avatar';
+                    containerEl.appendChild(avatarEl);
+                } else {
+                    // عرض أيقونة مستخدم بدلاً من الصورة
+                    const iconEl = document.createElement('div');
+                    iconEl.className = 'chat-avatar';
+                    iconEl.style.display = 'flex';
+                    iconEl.style.alignItems = 'center';
+                    iconEl.style.justifyContent = 'center';
+                    iconEl.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    iconEl.innerHTML = '<span style="font-size: 18px;">👤</span>';
+                    containerEl.appendChild(iconEl);
+                }
+
+                const messageContentEl = document.createElement('div');
+                messageContentEl.className = 'chat-message-content';
+
+                const messageEl = document.createElement('div');
+                messageEl.className = `chat-message ${type}`;
+
+                if (senderName) {
+                    const senderEl = document.createElement('div');
+                    senderEl.className = 'message-sender';
+                    senderEl.textContent = senderName;
+                    messageEl.appendChild(senderEl);
+                }
+
+                const contentEl = document.createElement('div');
+                contentEl.className = 'message-content';
+                contentEl.textContent = text;
+                messageEl.appendChild(contentEl);
+
+                messageContentEl.appendChild(messageEl);
+                containerEl.appendChild(messageContentEl);
+                chatMessages.appendChild(containerEl);
+            }
+
+            // التمرير التلقائي للأسفل
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendChatQuestion() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+
+            if (!text || !gameState) {
+                return;
+            }
+
+            input.value = '';
+
+            // الانتظار حتى يتم تحميل الصورة إذا لم تكن قد حُملت بعد
+            if (photoLoadPromise) {
+                await photoLoadPromise;
+            }
+
+            // استخدام صورة المستخدم فقط إذا كانت موجودة
+            const avatarToSend = playerAvatar || telegramUserPhoto;
+
+            console.log('Sending message with avatar:', avatarToSend);
+
+            // إرسال الرسالة للسيرفر (بدون التحقق من الدور)
+            await fetch('/api/send_message', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    player_id: playerId,
+                    message: text,
+                    avatar: avatarToSend
+                })
+            });
+
+            // تحديث حالة اللعبة لعرض الرسالة
+            loadGameState();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendChatQuestion();
+                    }
+                });
+            }
+
+            const nameInput = document.getElementById('playerNameInput');
+            if (nameInput) {
+                nameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        confirmPlayerName();
+                    }
+                });
+            }
+        });
+
+        async function processTextQuestion(text) {
+            text = text.toLowerCase();
+
+            let attribute, value, question;
+
+            if (text.includes('أنثى') || text.includes('بنت') || text.includes('امرأة')) {
+                attribute = 'gender';
+                value = 'أنثى';
+                question = 'هل الشخصية أنثى؟';
+            } else if (text.includes('ذكر') || text.includes('رجل') || text.includes('ولد')) {
+                attribute = 'gender';
+                value = 'ذكر';
+                question = 'هل الشخصية ذكر؟';
+            } else if (text.includes('نظارة') || text.includes('نضارة')) {
+                attribute = 'glasses';
+                value = true;
+                question = 'هل ترتدي نظارة؟';
+            } else if (text.includes('أشقر') || text.includes('اشقر')) {
+                attribute = 'hair';
+                value = 'أشقر';
+                question = 'هل الشعر أشقر؟';
+            } else if (text.includes('أسود') || text.includes('اسود')) {
+                attribute = 'hair';
+                value = 'أسود';
+                question = 'هل الشعر أسود؟';
+            } else if (text.includes('بني')) {
+                attribute = 'hair';
+                value = 'بني';
+                question = 'هل الشعر بني؟';
+            } else if (text.includes('قبعة') || text.includes('طاقية')) {
+                attribute = 'hat';
+                value = true;
+                question = 'هل ترتدي قبعة؟';
+            } else {
+                // سؤال غير مفهوم - لا نفعل شيء
+                return;
+            }
+
+            const response = await fetch('/api/ask_question', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    player_id: playerId,
+                    question: question,
+                    attribute: attribute,
+                    value: value
+                })
+            });
+            const data = await response.json();
+
+            const answerEmoji = data.answer === 'نعم' ? '✅' : '❌';
+            addChatMessage(`${answerEmoji} الإجابة: ${data.answer}`, 'answer-message');
+            loadGameState();
+        }
+
+        async function loadGameState() {
+            const response = await fetch(`/api/game/${sessionId}/${playerId}`);
+            gameState = await response.json();
+            updateUI();
+        }
+
+        function getCharacterImage(character) {
+            return character.image || 'https://via.placeholder.com/60';
+        }
+
+        function updateUI() {
+            const statusEl = document.getElementById('status');
+            const chatInput = document.getElementById('chatInput');
+            const guessBtn = document.querySelector('.guess-btn');
+
+            // التحقق من الاسم للاعبين فقط
+            if (!isSpectator && !gameState.is_spectator && !playerName) {
+                document.getElementById('nameOverlay').classList.add('show');
+            }
+
+            // وضع المشاهدة
+            if (isSpectator || gameState.is_spectator) {
+                document.getElementById('secret-selection').style.display = 'none';
+                document.getElementById('game-area').style.display = 'block';
+
+                const players = gameState.players || [];
+                const playersText = players.length > 0 ? `\n👥 اللاعبون: ${players.join(' vs ')}` : '';
+
+                if (gameState.status === 'choosing_secret') {
+                    statusEl.textContent = '⏳ اللاعبون يختارون شخصياتهم...' + playersText;
+                } else if (gameState.status === 'playing') {
+                    statusEl.textContent = '👁️ وضع المشاهدة - تابع اللعبة' + playersText;
+                } else if (gameState.status === 'finished') {
+                    statusEl.textContent = '🏁 انتهت اللعبة!' + playersText;
+                }
+
+                renderCards();
+                renderHistory();
+
+                // تعطيل أزرار اللعب للمشاهدين
+                if (guessBtn) guessBtn.disabled = true;
+                if (chatInput) chatInput.disabled = true;
+                return;
+            }
+
+            if (gameState.status === 'choosing_secret') {
+                if (!gameState.secret_card) {
+                    document.getElementById('secret-selection').style.display = 'block';
+                    document.getElementById('game-area').style.display = 'none';
+                    statusEl.textContent = '✨ اختر شخصيتك السرية من البطاقات';
+                    renderSecretCards();
+                } else {
+                    statusEl.textContent = '⏳ في انتظار اختيار الخصم...';
+                }
+            } else if (gameState.status === 'playing') {
+                document.getElementById('secret-selection').style.display = 'none';
+                document.getElementById('game-area').style.display = 'block';
+
+                statusEl.textContent = '🎮 اللعبة جارية - تفقوا على من يبدأ!';
+                statusEl.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                statusEl.style.color = 'white';
+                
+                // تفعيل جميع الأزرار دائماً
+                if (guessBtn) guessBtn.disabled = false;
+                if (chatInput) {
+                    chatInput.disabled = false;
+                    chatInput.placeholder = 'اكتب سؤالك أو رسالتك هنا...';
+                }
+
+                // عرض فرص التخمين المتبقية
+                const attemptsBar = document.getElementById('attemptsBar');
+                const attemptsCount = document.getElementById('attemptsCount');
+                const remainingAttempts = 2 - (gameState.guess_attempts || 0);
+                
+                if (attemptsBar && attemptsCount) {
+                    attemptsBar.style.display = 'block';
+                    attemptsCount.textContent = remainingAttempts;
+                    
+                    if (remainingAttempts <= 0) {
+                        attemptsBar.style.background = 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+                        attemptsCount.textContent = '0 - لا توجد فرص متبقية!';
+                    } else if (remainingAttempts === 1) {
+                        attemptsBar.style.background = 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)';
+                    }
+                }
+
+                renderCards();
+                loadChatHistory();
+            } else if (gameState.status === 'finished') {
+                showWinner();
+            }
+        }
+
+        function renderSecretCards() {
+            const grid = document.getElementById('secret-cards');
+            grid.innerHTML = '';
+
+            gameState.cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card';
+                cardEl.innerHTML = `
+                    <div class="card-front">
+                        <div class="card-avatar"><img src="${getCharacterImage(card)}" alt="${card.name}"></div>
+                        <div class="card-name">${card.name}</div>
+                    </div>
+                    <div class="card-back">❌</div>
+                `;
+                cardEl.onclick = () => chooseSecret(card.id);
+                grid.appendChild(cardEl);
+            });
+        }
+
+        async function confirmPlayerName() {
+            const nameInput = document.getElementById('playerNameInput');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                alert('الرجاء إدخال اسمك!');
+                return;
+            }
+
+            playerName = name;
+            
+            // الانتظار حتى يتم تحميل الصورة
+            if (photoLoadPromise) {
+                await photoLoadPromise;
+            }
+            
+            // استخدام صورة التليجرام فقط إذا كانت موجودة
+            playerAvatar = telegramUserPhoto;
+
+            console.log('Setting player name with avatar:', playerAvatar);
+
+            // إرسال الاسم والصورة للسيرفر
+            await fetch('/api/set_player_name', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    player_id: playerId,
+                    name: name,
+                    avatar: playerAvatar
+                })
+            });
+
+            document.getElementById('nameOverlay').classList.remove('show');
+            playSound('correct');
+        }
+
+        
+
+        async function chooseSecret(cardId) {
+            playSound('correct');
+            mySecretCardId = cardId;
+
+            await fetch('/api/choose_secret', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId, player_id: playerId, card_id: cardId})
+            });
+
+            // عرض البطاقة المختارة بشكل كبير
+            const selectedCard = gameState.cards.find(c => c.id === cardId);
+            if (selectedCard) {
+                const largeCardDisplay = document.getElementById('largeCardDisplay');
+                largeCardDisplay.innerHTML = `
+                    <img src="${getCharacterImage(selectedCard)}" alt="${selectedCard.name}">
+                    <div style="position: absolute; bottom: 15px; width: 100%; text-align: center; background: linear-gradient(135deg, #d4af37, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 24px; font-weight: bold;">${selectedCard.name}</div>
+                `;
+                document.getElementById('cardDisplayOverlay').classList.add('show');
+            }
+
+            loadGameState();
+        }
+
+        function closeCardDisplay() {
+            document.getElementById('cardDisplayOverlay').classList.remove('show');
+            playSound('correct');
+        }
+
+        function renderCards() {
+            const grid = document.getElementById('cards-grid');
+            grid.innerHTML = '';
+
+            gameState.cards.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card';
+                cardEl.setAttribute('data-card-id', card.id);
+                
+                if (gameState.eliminated.includes(card.id)) {
+                    cardEl.classList.add('flipped');
+                }
+
+                cardEl.innerHTML = `
+                    <div class="card-front">
+                        <div class="card-avatar"><img src="${getCharacterImage(card)}" alt="${card.name}"></div>
+                        <div class="card-name">${card.name}</div>
+                    </div>
+                    <div class="card-back">❌</div>
+                `;
+
+                if (!isSpectator && !gameState.is_spectator) {
+                    if (guessMode && !gameState.eliminated.includes(card.id)) {
+                        cardEl.onclick = () => makeGuess(card.id);
+                    } else {
+                        // السماح بالضغط على البطاقة حتى لو كانت مقلوبة للتراجع
+                        cardEl.onclick = () => eliminateCard(card.id);
+                    }
+                }
+
+                grid.appendChild(cardEl);
+            });
+
+            // عرض البطاقة المختارة المصغرة
+            if (gameState.secret_card && !isSpectator && !gameState.is_spectator) {
+                const secretCard = gameState.cards.find(c => c.id === gameState.secret_card);
+                if (secretCard) {
+                    const container = document.getElementById('mySecretCardContainer');
+                    const cardDisplay = document.getElementById('mySecretCard');
+                    cardDisplay.innerHTML = `<img src="${getCharacterImage(secretCard)}" alt="${secretCard.name}">`;
+                    container.style.display = 'block';
+                }
+            }
+        }
+
+        async function askQuestion(attribute, value, question) {
+            if (!gameState.is_turn) return;
+
+            const response = await fetch('/api/ask_question', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    player_id: playerId,
+                    question: question,
+                    attribute: attribute,
+                    value: value
+                })
+            });
+            const data = await response.json();
+
+            const answerEmoji = data.answer === 'نعم' ? '✅' : '❌';
+            alert(`${answerEmoji} الإجابة: ${data.answer}`);
+            loadGameState();
+        }
+
+        async function eliminateCard(cardId) {
+            // تشغيل صوت قلب البطاقة
+            playSound('flip');
+
+            // Toggle: إذا كانت مستبعدة تُلغى، وإن لم تكن تُستبعد
+            const response = await fetch('/api/eliminate_card', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId, player_id: playerId, card_id: cardId})
+            });
+            
+            const data = await response.json();
+            
+            // تحديث الواجهة فوراً
+            const cardElement = document.querySelector(`[data-card-id="${cardId}"]`);
+            if (cardElement) {
+                if (data.action === 'added') {
+                    cardElement.classList.add('flipped');
+                } else if (data.action === 'removed') {
+                    cardElement.classList.remove('flipped');
+                }
+            }
+            
+            loadGameState();
+        }
+
+        function enableGuessMode() {
+            guessMode = true;
+            alert('🎯 اضغط على البطاقة التي تعتقد أنها الصحيحة!');
+            renderCards();
+        }
+
+        async function makeGuess(cardId) {
+            const response = await fetch('/api/guess', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId, player_id: playerId, card_id: cardId})
+            });
+            const data = await response.json();
+
+            if (data.correct) {
+                playSound('win');
+                alert('🎉 تخمين صحيح! لقد فزت!');
+            } else {
+                playSound('wrong');
+                const remainingAttempts = 2 - data.attempts;
+                
+                if (data.game_over) {
+                    if (data.no_winner) {
+                        // لا يوجد فائز - كلاهما استخدم محاولاتهما
+                        playSound('lose');
+                        alert('❌ تخمين خاطئ!\n\n😔 استخدمت الفرصتين!\n\n🤝 لم يحزر أحد - انتهت اللعبة بدون فائز');
+                    } else {
+                        // الخصم فاز (يجب ألا يحدث هذا في المنطق الجديد)
+                        playSound('lose');
+                        alert('❌ تخمين خاطئ!\n\n😔 استخدمت الفرصتين وخسرت اللعبة!');
+                    }
+                } else {
+                    if (data.waiting_for_opponent) {
+                        // استخدمت محاولاتك - في انتظار الخصم
+                        alert(`❌ تخمين خاطئ!\n\n😔 استخدمت الفرصتين!\n\n⏳ في انتظار الخصم لإكمال محاولاته...`);
+                    } else {
+                        alert(`❌ تخمين خاطئ!\n\n🎯 لديك ${remainingAttempts} فرصة متبقية`);
+                    }
+                }
+            }
+            guessMode = false;
+            loadGameState();
+        }
+
+        let lastHistoryLength = 0;
+        let lastChatLength = 0;
+
+        function loadChatHistory() {
+            const chatMessages = document.getElementById('chatMessages');
+
+            // تحميل رسائل الأسئلة والأجوبة الجديدة
+            if (gameState.history.length > lastHistoryLength) {
+                for (let i = lastHistoryLength; i < gameState.history.length; i++) {
+                    const item = gameState.history[i];
+                    const emoji = item.answer === 'نعم' ? '✅' : '❌';
+                    const playerName = item.player_name || `لاعب ${item.player}`;
+                    const messageType = item.player === playerId ? 'my-message' : 'their-message';
+                    const senderName = item.player === playerId ? 'أنت' : playerName;
+                    const senderAvatar = item.player_avatar || null;
+
+                    addChatMessage(item.question, messageType, senderName, senderAvatar);
+                    addChatMessage(`${emoji} الإجابة: ${item.answer}`, 'answer-message');
+
+                    // تشغيل صوت بناءً على الإجابة
+                    if (item.answer === 'نعم') {
+                        playSound('correct');
+                    } else {
+                        playSound('wrong');
+                    }
+                }
+                lastHistoryLength = gameState.history.length;
+            }
+
+            // تحميل رسائل الدردشة النصية الجديدة
+            const chatMessagesList = gameState.chat_messages || [];
+            if (chatMessagesList.length > lastChatLength) {
+                for (let i = lastChatLength; i < chatMessagesList.length; i++) {
+                    const item = chatMessagesList[i];
+                    const playerName = item.player_name || `لاعب ${item.player}`;
+                    const messageType = item.player === playerId ? 'my-message' : 'their-message';
+                    const senderName = item.player === playerId ? 'أنت' : playerName;
+                    const senderAvatar = item.player_avatar || null;
+
+                    addChatMessage(item.message, messageType, senderName, senderAvatar);
+
+                    // تشغيل صوت لرسالة الخصم فقط
+                    if (item.player !== playerId) {
+                        playSound('message');
+                    }
+                }
+                lastChatLength = chatMessagesList.length;
+            }
+        }
+
+        function showWinner() {
+            const overlay = document.getElementById('winnerOverlay');
+            const emoji = document.getElementById('winnerEmoji');
+            const text = document.getElementById('winnerText');
+
+            // التحقق من حالة عدم وجود فائز
+            if (gameState.winner === null || gameState.winner === undefined) {
+                emoji.textContent = '🤝';
+                text.textContent = 'انتهت اللعبة بدون فائز!\n\nلم يحزر أحد من اللاعبين الشخصية الصحيحة';
+                playSound('lose'); // صوت الخسارة
+            } else if (gameState.winner === playerId) {
+                emoji.textContent = '🏆';
+                text.textContent = 'مبروك! لقد فزت!';
+                playSound('win'); // صوت الفوز
+            } else {
+                emoji.textContent = '😔';
+                text.textContent = 'خسرت! حظ أفضل المرة القادمة';
+                playSound('lose'); // صوت الخسارة
+            }
+
+            overlay.classList.add('show');
+        }
+
+        function showInstructions() {
+            const overlay = document.getElementById('instructionsOverlay');
+            overlay.classList.add('show');
+        }
+
+        function hideInstructions() {
+            const overlay = document.getElementById('instructionsOverlay');
+            overlay.classList.remove('show');
+        }
+
+        // التحكم في الموسيقى
+        const bgMusic = document.getElementById('backgroundMusic');
+        const bgMusic2 = document.getElementById('backgroundMusic2');
+        const musicToggle = document.getElementById('musicToggle');
+        const volumeSlider = document.getElementById('volumeSlider');
+        let isMusicPlaying = false;
+        let currentSong = 1; // الأغنية الحالية
+
+        // تشغيل الموسيقى تلقائياً عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // No music initialization needed as music controls are removed.
+        });
+
+        function toggleMusic() {
+            // This function is no longer needed as music controls are removed.
+        }
+
+        function switchToSong(direction) {
+            // This function is no longer needed as music controls are removed.
+        }
+
+        function changeVolume(value) {
+            // This function is no longer needed as music controls are removed.
+        }
+
+        setInterval(loadGameState, 2000);
+        loadGameState();
+    </script>
+</body>
+</html>
